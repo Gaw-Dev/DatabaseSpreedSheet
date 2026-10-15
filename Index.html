@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aplikasi Database Google Sheets</title>
+    <style>
+        :root {
+            --primary: #4f46e5;
+            --primary-hover: #4338ca;
+            --bg-color: #f8fafc;
+            --card-bg: #ffffff;
+            --text-color: #1e293b;
+            --border-color: #e2e8f0;
+            --danger: #ef4444;
+            --danger-hover: #dc2626;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1000px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        header h2 {
+            font-size: 1.75rem;
+            color: #0f172a;
+            margin-bottom: 5px;
+        }
+
+        header p {
+            color: #64748b;
+            font-size: 0.95rem;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+            padding: 24px;
+            margin-bottom: 30px;
+            border: 1px solid var(--border-color);
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        label {
+            font-weight: 600;
+            font-size: 0.85rem;
+            margin-bottom: 6px;
+            color: #475569;
+            text-transform: uppercase;
+            letter-spacing: 0.025em;
+        }
+
+        input {
+            padding: 10px 14px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 0.95rem;
+            outline: none;
+            transition: all 0.2s;
+        }
+
+        input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        button {
+            background-color: var(--primary);
+            color: white;
+            padding: 11px 20px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: background-color 0.2s, transform 0.1s;
+        }
+
+        button:hover {
+            background-color: var(--primary-hover);
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        #cancelBtn {
+            background-color: #cbd5e1;
+            color: #334155;
+        }
+
+        #cancelBtn:hover {
+            background-color: #94a3b8;
+        }
+
+        #status {
+            margin-top: 12px;
+            font-weight: 500;
+            font-size: 0.9rem;
+        }
+
+        .table-responsive {
+            width: 100%;
+            overflow-x: auto;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            background: white;
+            white-space: nowrap;
+        }
+
+        th, td {
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 0.9rem;
+        }
+
+        th {
+            background-color: #f8fafc;
+            font-weight: 600;
+            color: #475569;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        tr:hover {
+            background-color: #f8fafc;
+        }
+
+        .action-btns {
+            display: flex;
+            gap: 6px;
+        }
+
+        .btn-edit {
+            background-color: #0ea5e9;
+            color: white;
+            padding: 6px 10px;
+            font-size: 0.8rem;
+            border-radius: 6px;
+        }
+
+        .btn-edit:hover {
+            background-color: #0284c7;
+        }
+
+        .btn-delete {
+            background-color: var(--danger);
+            color: white;
+            padding: 6px 10px;
+            font-size: 0.8rem;
+            border-radius: 6px;
+        }
+
+        .btn-delete:hover {
+            background-color: var(--danger-hover);
+        }
+
+        #loading {
+            text-align: center;
+            color: #64748b;
+            padding: 20px;
+            font-style: italic;
+        }
+
+        @media (max-width: 640px) {
+            body { padding: 12px; }
+            .card { padding: 16px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <h2 id="formTitle">Manajemen Data Database</h2>
+            <p>Terhubung langsung dengan Google Sheets</p>
+        </header>
+        
+        <!-- Form Card (Input No disembunyikan karena sudah otomatis) -->
+        <div class="card">
+            <form id="dataForm">
+                <!-- Hidden input untuk menyimpan nomor key saat proses Edit -->
+                <input type="hidden" id="No" name="No">
+
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="Nama">Nama</label>
+                        <input type="text" id="Nama" name="Nama" placeholder="Nama lengkap" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="Kelas">Kelas</label>
+                        <input type="text" id="Kelas" name="Kelas" placeholder="Kelas" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="Asal">Asal</label>
+                        <input type="text" id="Asal" name="Asal" placeholder="Asal sekolah/daerah" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="Nilai">Nilai</label>
+                        <input type="text" id="Nilai" name="Nilai" placeholder="Nilai angka" required>
+                    </div>
+                    <div class="form-group" style="grid-column: 1 / -1;">
+                        <label for="Keterangan">Keterangan</label>
+                        <input type="text" id="Keterangan" name="Keterangan" placeholder="Contoh: ADA" required>
+                    </div>
+                </div>
+                
+                <div class="btn-group">
+                    <button type="submit" id="submitBtn">Simpan Data</button>
+                    <button type="button" id="cancelBtn" style="display:none;" onclick="resetFormMode()">Batal Edit</button>
+                </div>
+                <p id="status"></p>
+            </form>
+        </div>
+
+        <!-- Table Card -->
+        <div class="card">
+            <h3 style="margin-top: 0; margin-bottom: 16px; font-size: 1.15rem; color: #0f172a;">Data Tersimpan</h3>
+            <div id="loading">Memuat data dari Spreadsheet...</div>
+            
+            <div class="table-responsive">
+                <table id="dataTable" style="display:none;">
+                    <thead>
+                        <tr id="tableHeaders"></tr>
+                    </thead>
+                    <tbody id="tableBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = "https://script.google.com/macros/s/AKfycbx3R9VOqZ0A0jJzQgraXM6ByafTI5MwXGp8IBcFdvCHtGfDAX5vXhcHTqkb_yKIeHMF/exec";
+        let cacheData = []; 
+
+        async function ambilData() {
+            try {
+                let response = await fetch(API_URL + "?t=" + new Date().getTime());
+                cacheData = await response.json();
+                
+                document.getElementById('loading').style.display = 'none';
+                let table = document.getElementById('dataTable');
+                table.style.display = 'table';
+                
+                let headersRow = document.getElementById('tableHeaders');
+                let tbody = document.getElementById('tableBody');
+                
+                headersRow.innerHTML = "";
+                tbody.innerHTML = "";
+                
+                if (cacheData.length > 0) {
+                    let keys = Object.keys(cacheData[0]);
+                    
+                    keys.forEach(key => {
+                        let th = document.createElement('th');
+                        th.innerText = key;
+                        headersRow.appendChild(th);
+                    });
+                    let thAction = document.createElement('th');
+                    thAction.innerText = "Aksi";
+                    headersRow.appendChild(thAction);
+                    
+                    cacheData.forEach((row, index) => {
+                        let tr = document.createElement('tr');
+                        keys.forEach(key => {
+                            let td = document.createElement('td');
+                            td.innerText = row[key];
+                            tr.appendChild(td);
+                        });
+                        
+                        let tdAction = document.createElement('td');
+                        let actionDiv = document.createElement('div');
+                        actionDiv.className = "action-btns";
+
+                        let btnEdit = document.createElement('button');
+                        btnEdit.type = "button";
+                        btnEdit.className = "btn-edit";
+                        btnEdit.innerText = "Edit";
+                        btnEdit.onclick = () => siapkanEdit(index);
+
+                        let btnDelete = document.createElement('button');
+                        btnDelete.type = "button";
+                        btnDelete.className = "btn-delete";
+                        btnDelete.innerText = "Hapus";
+                        btnDelete.onclick = () => hapusData(row.No);
+
+                        actionDiv.appendChild(btnEdit);
+                        actionDiv.appendChild(btnDelete);
+                        tdAction.appendChild(actionDiv);
+                        tr.appendChild(tdAction);
+                        
+                        tbody.appendChild(tr);
+                    });
+                }
+            } catch (error) {
+                document.getElementById('loading').innerText = "Gagal memuat data.";
+                console.error(error);
+            }
+        }
+
+        function siapkanEdit(index) {
+            let rowData = cacheData[index];
+            
+            document.getElementById('No').value = rowData.No || '';
+            document.getElementById('Nama').value = rowData.Nama || '';
+            document.getElementById('Kelas').value = rowData.Kelas || '';
+            document.getElementById('Asal').value = rowData.Asal || '';
+            document.getElementById('Nilai').value = rowData.Nilai || '';
+            document.getElementById('Keterangan').value = rowData.Keterangan || '';
+            
+            document.getElementById('formTitle').innerText = "Edit Data (No: " + rowData.No + ")";
+            document.getElementById('submitBtn').innerText = "Perbarui Data";
+            document.getElementById('cancelBtn').style.display = "inline-block";
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        async function hapusData(noKey) {
+            if (!confirm("Apakah Anda yakin ingin menghapus data No: " + noKey + "? Penomoran akan otomatis disesuaikan kembali.")) {
+                return;
+            }
+
+            let statusText = document.getElementById('status');
+            statusText.innerText = "Menghapus dan menomori ulang data...";
+            statusText.style.color = "#dc2626";
+
+            let formData = {
+                action: "delete",
+                No: noKey
+            };
+
+            try {
+                await fetch(API_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(formData)
+                });
+
+                statusText.innerText = "Data berhasil dihapus!";
+                statusText.style.color = "#16a34a";
+
+                setTimeout(async () => {
+                    statusText.innerText = "";
+                    await ambilData();
+                }, 1500);
+
+            } catch (error) {
+                statusText.innerText = "Gagal menghapus data.";
+                statusText.style.color = "#dc2626";
+                console.error(error);
+            }
+        }
+
+        function resetFormMode() {
+            document.getElementById('dataForm').reset();
+            document.getElementById('No').value = "";
+            document.getElementById('formTitle').innerText = "Manajemen Data Database";
+            document.getElementById('submitBtn').innerText = "Simpan Data";
+            document.getElementById('cancelBtn').style.display = "none";
+            document.getElementById('status').innerText = "";
+        }
+
+        document.getElementById('dataForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            let submitBtn = document.getElementById('submitBtn');
+            let statusText = document.getElementById('status');
+            
+            submitBtn.disabled = true;
+            statusText.innerText = "Menyimpan perubahan...";
+            statusText.style.color = "#4f46e5";
+            
+            let formData = {
+                No: document.getElementById('No').value, // Jika kosong = tambah baru, jika ada isinya = edit
+                Nama: document.getElementById('Nama').value,
+                Kelas: document.getElementById('Kelas').value,
+                Asal: document.getElementById('Asal').value,
+                Nilai: document.getElementById('Nilai').value,
+                Keterangan: document.getElementById('Keterangan').value
+            };
+            
+            try {
+                await fetch(API_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(formData)
+                });
+                
+                statusText.innerText = "Data berhasil disimpan!";
+                statusText.style.color = "#16a34a";
+                
+                setTimeout(async () => {
+                    resetFormMode();
+                    await ambilData();
+                    submitBtn.disabled = false;
+                }, 1500);
+
+            } catch (error) {
+                statusText.innerText = "Terjadi kesalahan saat menyimpan data.";
+                statusText.style.color = "#dc2626";
+                submitBtn.disabled = false;
+                console.error(error);
+            }
+        });
+
+        ambilData();
+    </script>
+</body>
+</html>
